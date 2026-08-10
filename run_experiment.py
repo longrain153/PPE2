@@ -135,14 +135,38 @@ def main():
     axs[0].set_ylim(-6, 6)
     axs[0].set_title(f"Differential profile, {FAULT_LOSS_DB}-dB lumped loss, "
                      "single post-fault capture")
-    axs[1].plot(z_grid[:-1], jump_naive, color="tab:blue", alpha=0.6,
-                label="jump indicator, naive")
-    axs[1].plot(z_grid[:-1], jump_sp, color="tab:red", lw=2,
-                label="jump indicator, sparse")
+    # naive and sparse indicators differ by ~3 orders of magnitude:
+    # give the sparse one its own axis and stem markers, otherwise it
+    # looks like a flat zero line next to the naive noise
+    axs[1].plot(z_grid[:-1], jump_naive, color="tab:blue", alpha=0.45,
+                label="jump indicator, naive (left axis)")
     axs[1].axvline(FAULT_POS_KM, color="g", ls=":")
     axs[1].set_xlabel("distance [km]")
-    axs[1].set_ylabel("diff of relative change Δx/x_ref")
-    axs[1].legend(), axs[1].grid(alpha=0.3)
+    axs[1].set_ylabel("naive: diff of Δx/x_ref", color="tab:blue")
+    axs[1].tick_params(axis="y", labelcolor="tab:blue")
+    ax_sp = axs[1].twinx()
+    nz = np.abs(jump_sp) > 1e-8
+    ml, sl, bl = ax_sp.stem(z_grid[:-1][nz], jump_sp[nz],
+                            basefmt=" ", label="jump indicator, sparse (right axis)")
+    plt.setp(ml, color="tab:red", markersize=9)
+    plt.setp(sl, color="tab:red", lw=2.5)
+    ax_sp.axhline(0, color="tab:red", lw=0.8, alpha=0.5)
+    lim = max(1.5 * np.max(np.abs(jump_sp)), 1e-3)
+    ax_sp.set_ylim(-lim, lim)
+    ax_sp.set_ylabel("sparse: jump of Δx/x_ref", color="tab:red")
+    ax_sp.tick_params(axis="y", labelcolor="tab:red")
+    k_nz = np.argmin(jump_sp)
+    ax_sp.annotate(
+        f"detected fault (argmin):\n{z_grid[k_nz]:.1f} km, {jump_sp[k_nz]:.3f}\n"
+        f"({int(np.sum(nz))} nonzero of {jump_sp.size} bins)",
+        xy=(z_grid[k_nz], jump_sp[k_nz]),
+        xytext=(z_grid[k_nz] + 12, jump_sp[k_nz] * 0.55),
+        color="tab:red", fontsize=9,
+        arrowprops=dict(arrowstyle="->", color="tab:red"))
+    h1, l1 = axs[1].get_legend_handles_labels()
+    h2, l2 = ax_sp.get_legend_handles_labels()
+    axs[1].legend(h1 + h2, l1 + l2, loc="upper left")
+    axs[1].grid(alpha=0.3)
     fig.tight_layout(), fig.savefig(f"{RESULTS}/fig2_differential_localization.png",
                                     dpi=150)
 
