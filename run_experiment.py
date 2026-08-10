@@ -34,6 +34,7 @@ N_REF_CAPTURES = 12
 N_FAULT_TRIALS = 4
 RX_SNR_DB = 18.0
 DZ_KM = 1.0
+N_SYMBOLS = 81920  # 10x the original 8192 for a smoother reference
 
 
 def capture(link, sig, rng, z_grid):
@@ -50,7 +51,7 @@ def main():
 
     os.makedirs(RESULTS, exist_ok=True)
     rng = np.random.default_rng(2026)
-    sig = SignalConfig()
+    sig = SignalConfig(n_symbols=N_SYMBOLS)
     link_ok = LinkConfig()
     link_bad = LinkConfig(fault_pos_km=FAULT_POS_KM, fault_loss_db=FAULT_LOSS_DB)
     z_grid = np.arange(DZ_KM / 2, link_ok.total_length_km, DZ_KM)
