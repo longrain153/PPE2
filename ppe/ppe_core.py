@@ -51,11 +51,64 @@ def build_g_matrix(u_tx: np.ndarray, z_grid_km: np.ndarray, link: LinkConfig,
     return g
 
 
+def normal_eqs(g: np.ndarray, y: np.ndarray):
+    """Real-constrained normal equations: M = Re(G'G), c = Re(G'y)."""
+    return np.real(g.conj().T @ g), np.real(g.conj().T @ y)
+
+
 def ls_ppe(g: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Plain (real-constrained) least squares: x = Re(G'G)^-1 Re(G'y)."""
-    m = np.real(g.conj().T @ g)
-    c = np.real(g.conj().T @ y)
+    m, c = normal_eqs(g, y)
     return np.linalg.solve(m, c)
+
+
+def d2_matrix(m: int) -> np.ndarray:
+    """Second-difference operator ((m-2) x m), the NTT ECOC'25 D^(2)."""
+    d = np.zeros((m - 2, m))
+    idx = np.arange(m - 2)
+    d[idx, idx] = 1.0
+    d[idx, idx + 1] = -2.0
+    d[idx, idx + 2] = 1.0
+    return d
+
+
+def sparse_absolute_profile(m_mat: np.ndarray, c_vec: np.ndarray,
+                            target_knots: int = 12) -> np.ndarray:
+    """NTT-style link-parameter-free sparse regularization of an
+    ABSOLUTE power profile:
+
+        min_x 0.5||G x - y||^2 + lam ||D2 x||_1
+
+    (piecewise-linear prior: D2 x is sparse, nonzero at amplifiers and
+    anomalies).  lam descends along a warm-started path until the knot
+    support reaches target_knots, i.e. just enough degrees of freedom
+    for the amplifier steps, the within-span curvature, and a possible
+    anomaly.  Pass the (possibly multi-capture-summed) normal equations.
+    """
+    d = d2_matrix(c_vec.size)
+    lam = 10.0 * np.max(np.abs(c_vec))
+    warm = None
+    x = np.linalg.solve(m_mat, c_vec)
+    for _ in range(60):
+        x, knots, dual = admm_gen_lasso(m_mat, c_vec, d, lam, n_iter=1500,
+                                        warm=warm)
+        warm = (knots, dual)
+        if int(np.sum(np.abs(knots) > 1e-8)) >= target_knots:
+            break
+        lam *= 0.7
+    return x
+
+
+def sparse_profile_subtraction_localize(x_sp_fault: np.ndarray,
+                                        x_sp_ref: np.ndarray):
+    """Method (d): sparse-regularize reference and fault profiles
+    independently (absolute domain), then subtract and pick the largest
+    drop of the relative change. Unlike the differential scheme, the
+    sparsity prior here never sees the difference, so the two
+    regularizations place their knots independently."""
+    u = (x_sp_fault - x_sp_ref) / floor_ref(x_sp_ref)
+    jump = np.diff(u)
+    return jump, int(np.argmin(jump))
 
 
 def floor_ref(x_ref: np.ndarray, rel_floor: float = 0.02) -> np.ndarray:

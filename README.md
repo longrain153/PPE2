@@ -43,25 +43,30 @@ Two corrections vs. the dialogue's formulation were needed in practice:
 
 Single-polarization split-step NLSE, 64-GBd 16QAM, 3 × 50 km SSMF
 (0.2 dB/km, β₂ = −21.4 ps²/km, γ = 1.3 /W/km), 6 dBm launch, EDFA ASE
-plus 18-dB receiver SNR, 81920 symbols per capture. A 3.0-dB lumped loss
-is inserted at 72.35 km (off-grid). PPE grid: 1 km.
+plus 18-dB receiver SNR, 81920 symbols per capture. Lumped losses of 1.0 dB and 3.0 dB
+are inserted (separately) at 72.35 km (off-grid). PPE grid: 1 km.
 
 ```
 pip install -r requirements.txt
 python3 run_experiment.py        # ~40 min at 81920 sym/capture, writes results/*.png
 ```
 
-## Results (4 fault trials, single post-fault capture each)
+## Results (4 fault trials per loss depth, single post-fault capture each)
 
-| method                                   | mean abs err | max abs err |
-|------------------------------------------|--------------|-------------|
-| naive profile subtraction (LS)           | ~24 km       | 27 km       |
-| differential sparse (gen-Lasso, 1-km grid)| **0.15 km** | 0.15 km     |
-| matched-filter refinement (100-m grid)   | 0.75 km      | 0.85 km     |
+| method (mean/max abs err)                  | 1 dB           | 3 dB           |
+|--------------------------------------------|----------------|----------------|
+| (a) naive profile subtraction (LS)         | 23.9 / 27.2 km | 39.2 / 75.2 km |
+| (b) sparse PPE profile subtraction (D²)    | 14.3 / 28.9 km | 26.9 / 28.9 km |
+| (c) differential sparse (gen-Lasso, 1-km)  | **0.15 / 0.15 km** | **0.15 / 0.15 km** |
+| (d) matched-filter refinement (100-m grid) | 0.65 / 0.95 km | 0.75 / 0.85 km |
 
-Estimated loss magnitude from the matched-filter refit: 2.67–2.68 dB
-(true 3.0 dB). The sparse stage detects a single nonzero jump exactly at
-the fault bin in every trial (the 1-km grid's resolution floor).
+Loss magnitude from the matched-filter refit: 0.88–0.89 dB (true 1.0)
+and 2.68–2.69 dB (true 3.0). Method (b) — NTT-style D² sparse
+regularization applied independently to reference and fault profiles,
+then subtracted — fails because the two regularizations place their
+knots independently at low-SNR span tails and the artifacts do not
+cancel: the sparsity prior must act on the *differential*, not on each
+profile separately.
 
 ## Verdict on the dialogue's claims
 
