@@ -1,1 +1,96 @@
-# PPE2
+# PPE2 — Differential Sparse PPE for Fault Localization
+
+Reproduction and assessment of the "differential sparse PPE" scheme for
+improving the localization accuracy of fiber-longitudinal power profile
+estimation (PPE / LPM), as discussed in a Gemini dialogue and related to:
+
+* T. Sasai et al., *Linear Least Squares Estimation of Fiber-Longitudinal
+  Optical Power Profile*, JLT 2023 (LS-PPE model)
+* R. Shinzaki et al. (Fujitsu), *Sparse Modeling Analysis for Efficient
+  Localization of Power Anomalies in Transmission Links*, OECC 2024
+  (generalized Lasso with a prior-knowledge J-matrix)
+* H. Ishihara et al. (NTT), *Robust Fibre Longitudinal Power Monitoring
+  with Few Measurements using Two-stage Sparse Regularization*, ECOC 2025
+
+## The scheme under test
+
+1. **Reference stage** (healthy link, plenty of data): average LS-PPE over
+   many captures to get a low-noise reference profile `x_ref`.
+2. **Fault stage** (few captures): instead of re-estimating the absolute
+   profile, solve for the *change* against the reference. Because the RP1
+   perturbation model `y ≈ G γ'` is linear in the power profile, the fault
+   signature lives in the residual `r = y_fault − G x_ref`.
+3. **Sparsity prior**: a single lumped loss makes the *relative* change
+   `u = Δx / x_ref` an exact step function, so total-variation (L1 on the
+   first difference) regularization collapses the estimate onto one
+   change point (generalized Lasso, solved with ADMM along a λ path).
+4. **Refinement**: a matched-filter scan of candidate fault positions on a
+   100-m grid (RP1 step signatures) refines position and re-fits the loss
+   magnitude without Lasso shrinkage bias.
+
+Two corrections vs. the dialogue's formulation were needed in practice:
+
+* You cannot literally subtract measurements `Δy = y_ref − y_fault` taken
+  with different transmitted data patterns; the correct differential is
+  `r = y_fault − G_fault x_ref` (subtract the reference *profile* through
+  the current capture's own perturbation operator).
+* A plain first-difference penalty `‖D Δx‖₁` is not the right sparsity
+  basis, because `Δx` decays with fiber loss and jumps at EDFAs. Working
+  in the relative domain `u = Δx / x_ref` (equivalently the Fujitsu
+  attenuation-weighted J-matrix) makes the fault the only change point.
+
+## Simulation
+
+Single-polarization split-step NLSE, 64-GBd 16QAM, 3 × 50 km SSMF
+(0.2 dB/km, β₂ = −21.4 ps²/km, γ = 1.3 /W/km), 6 dBm launch, EDFA ASE
+plus 18-dB receiver SNR, 81920 symbols per capture. Lumped losses of 1.0 dB and 3.0 dB
+are inserted (separately) at 72.35 km (off-grid). PPE grid: 1 km.
+
+```
+pip install -r requirements.txt
+python3 run_experiment.py        # ~40 min at 81920 sym/capture, writes results/*.png
+```
+
+## Results (4 fault trials per loss depth, single post-fault capture each)
+
+| method (mean/max abs err)                  | 1 dB           | 3 dB           |
+|--------------------------------------------|----------------|----------------|
+| (a) naive profile subtraction (LS)         | 23.9 / 27.2 km | 39.2 / 75.2 km |
+| (b) sparse PPE profile subtraction (D²)    | 14.3 / 28.9 km | 26.9 / 28.9 km |
+| (c) differential sparse (gen-Lasso, 1-km)  | **0.15 / 0.15 km** | **0.15 / 0.15 km** |
+| (d) matched-filter refinement (100-m grid) | 0.65 / 0.95 km | 0.75 / 0.85 km |
+
+Loss magnitude from the matched-filter refit: 0.88–0.89 dB (true 1.0)
+and 2.68–2.69 dB (true 3.0). Method (b) — NTT-style D² sparse
+regularization applied independently to reference and fault profiles,
+then subtracted — fails because the two regularizations place their
+knots independently at low-SNR span tails and the artifacts do not
+cancel: the sparsity prior must act on the *differential*, not on each
+profile separately.
+
+## Verdict on the dialogue's claims
+
+* **Core idea — correct.** Differential estimation against a low-noise
+  reference plus a step-sparsity prior is sound, is essentially the
+  published Fujitsu/NTT approach, and in this reproduction improves
+  single-capture localization from tens of km (noise-dominated naive
+  subtraction) to the 1-km grid floor (matched filter: 0.65–0.85 km at 3 dB).
+* **"50–200 m accuracy, purely noise-limited" — not supported.** The
+  matched-filter correlation surface is nearly flat over several km:
+  adjacent candidate signatures decorrelate only through chromatic
+  dispersion acting on the signal bandwidth, so the CD × bandwidth²
+  physics that sets Δz_min still bounds how sharply a step can be
+  pinpointed. Published experimental numbers (1–4 km for 0.7–3 dB
+  events) and this simulation (0.55–0.95 km at 1 dB, 0.65–0.85 km at 3 dB,
+  with abundant data) agree; the claimed
+  10–50× improvement over the naive baseline is real, but the absolute
+  50–200 m figure is optimistic by roughly an order of magnitude at
+  these baud rates.
+
+## Layout
+
+* `ppe/link_sim.py` — split-step link simulator (spans, EDFAs, anomaly)
+* `ppe/ppe_core.py` — G-matrix, LS-PPE, ADMM generalized Lasso,
+  differential sparse localization, matched-filter refinement
+* `run_experiment.py` — end-to-end experiment and figures
+* `results/` — generated figures
