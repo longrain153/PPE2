@@ -29,7 +29,7 @@ from ppe.ppe_core import (build_g_matrix, differential_sparse_localize,
 RESULTS = "results"
 
 FAULT_POS_KM = 72.35
-FAULT_LOSS_DB = 1.0
+FAULT_LOSS_DB = 3.0
 N_REF_CAPTURES = 12
 N_FAULT_TRIALS = 4
 RX_SNR_DB = 18.0

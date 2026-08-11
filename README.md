@@ -43,7 +43,7 @@ Two corrections vs. the dialogue's formulation were needed in practice:
 
 Single-polarization split-step NLSE, 64-GBd 16QAM, 3 × 50 km SSMF
 (0.2 dB/km, β₂ = −21.4 ps²/km, γ = 1.3 /W/km), 6 dBm launch, EDFA ASE
-plus 18-dB receiver SNR, 81920 symbols per capture. A 1.0-dB lumped loss
+plus 18-dB receiver SNR, 81920 symbols per capture. A 3.0-dB lumped loss
 is inserted at 72.35 km (off-grid). PPE grid: 1 km.
 
 ```
@@ -57,10 +57,10 @@ python3 run_experiment.py        # ~40 min at 81920 sym/capture, writes results/
 |------------------------------------------|--------------|-------------|
 | naive profile subtraction (LS)           | ~24 km       | 27 km       |
 | differential sparse (gen-Lasso, 1-km grid)| **0.15 km** | 0.15 km     |
-| matched-filter refinement (100-m grid)   | 0.65 km      | 0.95 km     |
+| matched-filter refinement (100-m grid)   | 0.75 km      | 0.85 km     |
 
-Estimated loss magnitude from the matched-filter refit: 0.88–0.89 dB
-(true 1.0 dB). The sparse stage detects a single nonzero jump exactly at
+Estimated loss magnitude from the matched-filter refit: 2.67–2.68 dB
+(true 3.0 dB). The sparse stage detects a single nonzero jump exactly at
 the fault bin in every trial (the 1-km grid's resolution floor).
 
 ## Verdict on the dialogue's claims
@@ -69,15 +69,15 @@ the fault bin in every trial (the 1-km grid's resolution floor).
   reference plus a step-sparsity prior is sound, is essentially the
   published Fujitsu/NTT approach, and in this reproduction improves
   single-capture localization from tens of km (noise-dominated naive
-  subtraction) to the 1-km grid floor (matched filter: 0.55–0.95 km).
+  subtraction) to the 1-km grid floor (matched filter: 0.65–0.85 km at 3 dB).
 * **"50–200 m accuracy, purely noise-limited" — not supported.** The
   matched-filter correlation surface is nearly flat over several km:
   adjacent candidate signatures decorrelate only through chromatic
   dispersion acting on the signal bandwidth, so the CD × bandwidth²
   physics that sets Δz_min still bounds how sharply a step can be
   pinpointed. Published experimental numbers (1–4 km for 0.7–3 dB
-  events) and this simulation (0.55–0.95 km for 1 dB with abundant data)
-  agree; the claimed
+  events) and this simulation (0.55–0.95 km at 1 dB, 0.65–0.85 km at 3 dB,
+  with abundant data) agree; the claimed
   10–50× improvement over the naive baseline is real, but the absolute
   50–200 m figure is optimistic by roughly an order of magnitude at
   these baud rates.
