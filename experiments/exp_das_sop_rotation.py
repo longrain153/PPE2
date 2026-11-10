@@ -47,6 +47,11 @@ elif len(sys.argv) > 1 and sys.argv[1] == "all":
                    1500, 1900, 2000, 2100, 3000, 5000]
     OUT_PNG = "results/fig_das_sop_rotation_rate_all.png"
 
+# optional second CLI arg: receiver SNR in dB (e.g. 200 = noise-free)
+if len(sys.argv) > 2:
+    SNR_DB = float(sys.argv[2])
+    OUT_PNG = OUT_PNG.replace(".png", f"_snr{sys.argv[2]}dB.png")
+
 t = np.arange(NT) / PRF
 z = np.arange(NCH) * DX
 K_ROT = int(ROT_POS_M / DX)
