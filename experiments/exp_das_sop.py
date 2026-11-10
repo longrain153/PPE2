@@ -135,6 +135,13 @@ for ax, (title, sop_fn, demod_fn) in zip(axes, scenarios):
     ax.text(0.015, 0.97, f"channels with phase-rate std > 1 rad: {bad:.1f}%",
             transform=ax.transAxes, va="top", fontsize=9,
             bbox=dict(fc="white", alpha=0.85, ec="none"))
+    for z0, _w, freq, _a in EVENTS:
+        ax.annotate(f"event {z0:.0f} m / {freq:.0f} Hz",
+                    xy=(t[-1] * 1e3 * 0.985, z0), xycoords="data",
+                    xytext=(t[-1] * 1e3 * 0.70, z0 + 95), fontsize=8,
+                    color="darkgreen",
+                    bbox=dict(fc="white", alpha=0.85, ec="none"),
+                    arrowprops=dict(arrowstyle="->", color="darkgreen"))
 fig.colorbar(im, ax=axes, shrink=0.6, label="phase rate [rad/frame]",
              location="right", pad=0.012)
 
