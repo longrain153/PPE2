@@ -30,6 +30,17 @@ EVENTS = [(700.0, 6.0, 80.0, 2.0), (1400.0, 6.0, 160.0, 1.5)]
 ROT_POS_M = 250.0
 RATES_WF = [2.0, 20.0, 200.0]          # Poincare rev/s shown as waterfalls
 RATES_SWEEP = [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500]
+OUT_PNG = "results/fig_das_sop_rotation_rate.png"
+
+# optional CLI override: exp_das_sop_rotation.py fast -> high-rate /
+# aliasing study (rates up to 2.5x PRF, output *_fast.png)
+import sys
+
+if len(sys.argv) > 1 and sys.argv[1] == "fast":
+    RATES_WF = [500.0, 1000.0, 2000.0]
+    RATES_SWEEP = [50, 100, 200, 500, 800, 1000, 1500, 1900, 2000, 2100,
+                   3000, 5000]
+    OUT_PNG = "results/fig_das_sop_rotation_rate_fast.png"
 
 t = np.arange(NT) / PRF
 z = np.arange(NCH) * DX
@@ -178,7 +189,7 @@ ax2.set_ylabel("downstream median phase-rate std [rad]")
 ax2.set_title("Downstream (>250 m) phase noise vs rotation rate", fontsize=10)
 ax2.legend(fontsize=8), ax2.grid(alpha=0.3, which="both")
 
-fig.savefig("results/fig_das_sop_rotation_rate.png", dpi=150, bbox_inches="tight")
-print("saved results/fig_das_sop_rotation_rate.png")
+fig.savefig(OUT_PNG, dpi=150, bbox_inches="tight")
+print(f"saved {OUT_PNG}")
 for rate, sp, dv in zip(RATES_SWEEP, sweep_sp, sweep_dv):
     print(f"rate {rate:6g} rev/s: single-pol {sp:.3f} rad | pol-div {dv:.3f} rad")
