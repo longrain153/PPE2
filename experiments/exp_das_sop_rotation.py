@@ -41,6 +41,11 @@ if len(sys.argv) > 1 and sys.argv[1] == "fast":
     RATES_SWEEP = [50, 100, 200, 500, 800, 1000, 1500, 1900, 2000, 2100,
                    3000, 5000]
     OUT_PNG = "results/fig_das_sop_rotation_rate_fast.png"
+elif len(sys.argv) > 1 and sys.argv[1] == "all":
+    RATES_WF = [2.0, 20.0, 200.0, 500.0, 1000.0, 2000.0]
+    RATES_SWEEP = [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 800, 1000,
+                   1500, 1900, 2000, 2100, 3000, 5000]
+    OUT_PNG = "results/fig_das_sop_rotation_rate_all.png"
 
 t = np.arange(NT) / PRF
 z = np.arange(NCH) * DX
@@ -116,7 +121,7 @@ for z0, *_ in EVENTS:
     down_mask &= np.abs(z_mid - z0) > 40
 
 # ---------------- figure ----------------
-fig = plt.figure(figsize=(13, 15))
+fig = plt.figure(figsize=(13, 4.2 * len(RATES_WF) + 3))
 gs = fig.add_gridspec(len(RATES_WF) + 1, 2,
                       height_ratios=[2] * len(RATES_WF) + [1.6],
                       hspace=0.42, wspace=0.18)
