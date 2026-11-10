@@ -42,9 +42,9 @@ if len(sys.argv) > 1 and sys.argv[1] == "fast":
                    3000, 5000]
     OUT_PNG = "results/fig_das_sop_rotation_rate_fast.png"
 elif len(sys.argv) > 1 and sys.argv[1] == "all":
-    RATES_WF = [2.0, 20.0, 200.0, 500.0, 1000.0, 2000.0]
+    RATES_WF = [2.0, 20.0, 200.0, 500.0, 1000.0]
     RATES_SWEEP = [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 800, 1000,
-                   1500, 1900, 2000, 2100, 3000, 5000]
+                   1500, 1900, 2100, 3000, 5000]
     OUT_PNG = "results/fig_das_sop_rotation_rate_all.png"
 
 # optional second CLI arg: receiver SNR in dB (e.g. 200 = noise-free)
